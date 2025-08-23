@@ -18,10 +18,10 @@ const generateToken = (userId) => {
 // Register new user
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, confirm_password, firstName, lastName } = req.body;
+    const { email, password, firstName, lastName } = req.body;
 
     // Validation
-    if (!email || !password || !confirm_password || !firstName || !lastName) {
+    if (!email || !password || !firstName || !lastName) {
       return res.status(400).json({
         error: 'All fields are required'
       });

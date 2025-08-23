@@ -14,6 +14,10 @@ const AuthForm = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  //  password visibility states
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -26,7 +30,6 @@ const AuthForm = ({ onLogin }) => {
     setLoading(true);
     setError("");
 
-    // Validate password confirmation for signup
     if (!isLogin && formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       setLoading(false);
@@ -38,7 +41,6 @@ const AuthForm = ({ onLogin }) => {
       if (isLogin) {
         data = await login(formData.email, formData.password);
       } else {
-        // Only send required fields for registration
         const registerData = {
           firstName: formData.firstName,
           lastName: formData.lastName,
@@ -68,7 +70,7 @@ const AuthForm = ({ onLogin }) => {
     setFormData({
       email: "",
       password: "",
-      // confirmPassword: " ",
+      confirmPassword: "",
       firstName: "",
       lastName: "",
     });
@@ -78,9 +80,7 @@ const AuthForm = ({ onLogin }) => {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <h2>
-            {isLogin ? "Welcome Back" : "Create Account"}
-          </h2>
+          <h2>{isLogin ? "Welcome Back" : "Create Account"}</h2>
           <p>
             {isLogin
               ? "Sign in to access your health reports"
@@ -90,8 +90,7 @@ const AuthForm = ({ onLogin }) => {
 
         {error && <div className="auth-error">❌ {error}</div>}
 
-        <form onSubmit={handleSubmit} className="auth-form">
-          {/* Register fields */}
+      <form onSubmit={handleSubmit} className="auth-form">
           {!isLogin && (
             <div className="form-row">
               <div className="form-group">
@@ -134,10 +133,11 @@ const AuthForm = ({ onLogin }) => {
             />
           </div>
 
-          <div className="form-group">
+          {/* Password field with toggle which is used in both signin (login) & signup */}
+          <div className="form-group" style={{ position: "relative" }}>
             <label htmlFor="password">Password</label>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               id="password"
               name="password"
               value={formData.password}
@@ -146,6 +146,20 @@ const AuthForm = ({ onLogin }) => {
               placeholder="Enter your password"
               minLength={6}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: "absolute",
+                right: "10px",
+                top: "38px",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              {showPassword ? "🙈" : "👁️"}
+            </button>
             {!isLogin && (
               <small className="form-hint">
                 Password must be at least 6 characters
@@ -153,11 +167,12 @@ const AuthForm = ({ onLogin }) => {
             )}
           </div>
 
+          {/* Confirm Password field with toggle (only in signup) */}
           {!isLogin && (
-            <div className="form-group">
+            <div className="form-group" style={{ position: "relative" }}>
               <label htmlFor="confirmPassword">Confirm Password</label>
               <input
-                type="password"
+                type={showConfirm ? "text" : "password"}
                 id="confirmPassword"
                 name="confirmPassword"
                 value={formData.confirmPassword}
@@ -166,14 +181,24 @@ const AuthForm = ({ onLogin }) => {
                 placeholder="Confirm your password"
                 minLength={6}
               />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                style={{
+                  position: "absolute",
+                  right: "10px",
+                  top: "38px",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                {showConfirm ? "🙈" : "👁️"}
+              </button>
             </div>
           )}
 
-          <button
-            type="submit"
-            className="btn-auth-submit"
-            disabled={loading}
-          >
+          <button type="submit" className="btn-auth-submit" disabled={loading}>
             {loading ? (
               <span>
                 <span className="spinner-small"></span>
@@ -186,15 +211,11 @@ const AuthForm = ({ onLogin }) => {
             )}
           </button>
 
-          {/* Forgot password link */}
-          {isLogin && (
+        {isLogin && (
             <div style={{ marginTop: "1rem", textAlign: "right" }}>
               <Link
                 to="/forgot-password"
-                style={{
-                  color: "#007bff",
-                  textDecoration: "none",
-                }}
+                style={{ color: "#007bff", textDecoration: "none" }}
               >
                 Forgot Password?
               </Link>
@@ -204,9 +225,7 @@ const AuthForm = ({ onLogin }) => {
 
         <div className="auth-toggle">
           <p>
-            {isLogin
-              ? "Don't have an account? "
-              : "Already have an account? "}
+            {isLogin ? "Don't have an account? " : "Already have an account? "}
             <button type="button" onClick={toggleMode} className="btn-toggle">
               {isLogin ? "Create one" : "Sign in"}
             </button>
