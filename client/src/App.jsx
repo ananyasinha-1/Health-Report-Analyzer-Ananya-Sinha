@@ -1,5 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import AuthForm from './components/AuthForm';
 import UserProfile from './components/UserProfile';
 import FileUpload from './components/FileUpload';
@@ -9,8 +12,10 @@ import LoadingSpinner from './components/LoadingSpinner';
 import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
 import LandingPage from './components/LandingPage';
+import Footer from './components/Footer';
 import { getCurrentUser } from './utils/api';
 import './styles/App.css';
+import FAQ from "./components/FAQ";
 
 // Dashboard Component - Main authenticated app
 function Dashboard({ user, setUser }) {
@@ -20,15 +25,19 @@ function Dashboard({ user, setUser }) {
   const [error, setError] = useState(null);
 
   const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
     setReportData(null);
     setTrendData(null);
     setError(null);
+    toast.success("Successfully logged out. See you again!");
   };
 
   const handleFileProcessed = (data) => {
     setReportData(data);
     setError(null);
+    toast.success("Report processed successfully!");
   };
 
   const handleTrendData = (trends) => {
@@ -39,6 +48,7 @@ function Dashboard({ user, setUser }) {
     setError(errorMessage);
     setReportData(null);
     setTrendData(null);
+    toast.error(errorMessage);
   };
 
   const handleReset = () => {
@@ -70,7 +80,7 @@ function Dashboard({ user, setUser }) {
         {loading && <LoadingSpinner />}
 
         {!reportData && !loading && (
-          <FileUpload 
+          <FileUpload
             onFileProcessed={handleFileProcessed}
             onError={handleError}
             onLoadingChange={setLoading}
@@ -86,13 +96,13 @@ function Dashboard({ user, setUser }) {
               </button>
             </div>
 
-            <ReportTable 
+            <ReportTable
               data={reportData}
               onTrendData={handleTrendData}
             />
 
             {trendData && (
-              <TrendChart 
+              <TrendChart
                 data={trendData}
                 reportId={reportData.reportId}
               />
@@ -101,9 +111,10 @@ function Dashboard({ user, setUser }) {
         )}
       </main>
 
-      <footer className="app-footer">
-        <p>⚠️ This tool is for informational purposes only. Always consult with healthcare professionals.</p>
-      </footer>
+      {/* ✅ FAQ always before footer */}
+      <FAQ />
+
+      <Footer />
     </div>
   );
 }
@@ -117,15 +128,18 @@ function App() {
     const checkAuth = async () => {
       const token = localStorage.getItem('token');
       const userData = localStorage.getItem('user');
-      
+     
       if (token && userData) {
         try {
-          const userInfo = await getCurrentUser();
-          setUser(JSON.parse(userData));
+          await getCurrentUser();
+          const parsedUser = JSON.parse(userData);
+          setUser(parsedUser);
+          toast.info(`Welcome back, ${parsedUser.firstName}!`);
         } catch (error) {
           // Clear invalid session data
           localStorage.removeItem('token');
           localStorage.removeItem('user');
+          toast.error("Session expired. Please log in again.");
         }
       }
       setAuthLoading(false);
@@ -154,16 +168,22 @@ function App() {
       <div className="app">
         <Routes>
           {/* Landing page - default route for non-authenticated users */}
-          <Route 
-            path="/" 
+          <Route
+            path="/"
             element={
-              user ? <Navigate to="/dashboard" /> : <LandingPage user={user} />
-            } 
+              user ? <Navigate to="/dashboard" /> : (
+                <>
+                  <LandingPage user={user} />
+                  <FAQ />
+                  <Footer />
+                </>
+              )
+            }
           />
-          
+         
           {/* Auth form route */}
-          <Route 
-            path="/login" 
+          <Route
+            path="/login"
             element={
               user ? <Navigate to="/dashboard" /> : (
                 <>
@@ -174,16 +194,13 @@ function App() {
                   <main className="app-main">
                     <AuthForm onLogin={handleLogin} />
                   </main>
-                  <footer className="app-footer">
-                    <p>⚠️ This tool is for informational purposes only. Always consult with healthcare professionals.</p>
-                  </footer>
+                  <Footer />
                 </>
               )
-            } 
-          />
-          
-          <Route 
-            path="/forgot-password" 
+            }
+          />                  
+          <Route
+            path="/forgot-password"
             element={
               user ? <Navigate to="/dashboard" /> : (
                 <>
@@ -194,16 +211,14 @@ function App() {
                   <main className="app-main">
                     <ForgotPassword />
                   </main>
-                  <footer className="app-footer">
-                    <p>⚠️ This tool is for informational purposes only. Always consult with healthcare professionals.</p>
-                  </footer>
+                  <Footer />
                 </>
               )
-            } 
+            }
           />
-          
-          <Route 
-            path="/reset-password/:token" 
+         
+          <Route
+            path="/reset-password/:token"
             element={
               user ? <Navigate to="/dashboard" /> : (
                 <>
@@ -214,25 +229,37 @@ function App() {
                   <main className="app-main">
                     <ResetPassword />
                   </main>
-                  <footer className="app-footer">
-                    <p>⚠️ This tool is for informational purposes only. Always consult with healthcare professionals.</p>
-                  </footer>
+                  <Footer />
                 </>
               )
-            } 
+            }
           />
 
           {/* Protected route */}
-          <Route 
-            path="/dashboard" 
+          <Route
+            path="/dashboard"
             element={
               user ? <Dashboard user={user} setUser={setUser} /> : <Navigate to="/" />
-            } 
+            }
           />
 
           {/* Catch all route */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
+
+        {/* Toast Container */}
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
       </div>
     </Router>
   );

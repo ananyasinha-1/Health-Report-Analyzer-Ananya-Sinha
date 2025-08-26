@@ -1,6 +1,50 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { login, register } from "../utils/api";
+import { toast } from 'react-toastify';
+import "../styles/AuthForm.css";
+import GoogleButton from "react-google-button";
+import { auth, provider, signInWithPopup } from "./firebase.jsx";
+
+// SVG Icon for password visibility toggle
+const EyeIcon = ({ size = 20, color = "#6b7280" }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+    <circle cx="12" cy="12" r="3"></circle>
+  </svg>
+);
+
+const EyeOffIcon = ({ size = 20, color = "#6b7280" }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+    <line x1="1" y1="1" x2="23" y2="23"></line>
+  </svg>
+);
+
+const validatePassword = (password) => {
+  const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+  return strongRegex.test(password);
+};
 
 const AuthForm = ({ onLogin }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -13,10 +57,16 @@ const AuthForm = ({ onLogin }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
+  
+  main
   //  password visibility states
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  // State for password visibility
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+ main
 
   const handleChange = (e) => {
     setFormData({
@@ -25,27 +75,78 @@ const AuthForm = ({ onLogin }) => {
     });
   };
 
+  const handleGoogleSignIn = async () => {
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = {
+      firstName: result.user.displayName.split(" ")[0],
+      lastName: result.user.displayName.split(" ")[1] || "",
+      email: result.user.email,
+    };
+
+    // Save token and user locally
+    const token = await result.user.getIdToken();
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(user));
+    onLogin(user, token);
+  } catch (error) {
+    setError("Google sign-in failed. Please try again.");
+  }
+};
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
+ main
     if (!isLogin && formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       setLoading(false);
       return;
     }
 
+    // Validate password confirmation for signup
+    if (!isLogin) {
+  // Check password match
+  if (formData.password !== formData.confirmPassword) {
+    setError("Passwords do not match");
+    setLoading(false);
+    return;
+  }
+
+    // Validate strong password
+    if (!validatePassword(formData.password)) {
+      setError(
+        "Password must be at least 8 characters, include uppercase, lowercase, number, and special character."
+      );
+      setLoading(false);
+      toast.error("Password does not meet security requirements");
+      return;
+    }
+  }
+
+ main
+
     try {
       let data;
       if (isLogin) {
         data = await login(formData.email, formData.password);
       } else {
+ main
+
+        // Only send required fields for registration
+ main
         const registerData = {
           firstName: formData.firstName,
           lastName: formData.lastName,
           email: formData.email,
           password: formData.password,
+  main
+
+          confirm_password: formData.confirmPassword, // Added to match server expectation
+ main
         };
         data = await register(registerData);
       }
@@ -53,12 +154,24 @@ const AuthForm = ({ onLogin }) => {
       if (data.success) {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
+        
+        // Success toasts
+        if (isLogin) {
+          toast.success(`Welcome back, ${data.user.firstName}!`);
+        } else {
+          toast.success(`Account created successfully! Welcome, ${data.user.firstName}!`);
+        }
+        
         onLogin(data.user, data.token);
       } else {
-        setError(data.error || "Authentication failed");
+        const errorMessage = data.error || "Authentication failed";
+        setError(errorMessage);
+        toast.error(errorMessage);
       }
     } catch (error) {
-      setError(error.message || "Network error. Please try again.");
+      const errorMessage = error.message || "Network error. Please try again.";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -90,7 +203,13 @@ const AuthForm = ({ onLogin }) => {
 
         {error && <div className="auth-error">❌ {error}</div>}
 
+ main
       <form onSubmit={handleSubmit} className="auth-form">
+
+        <form onSubmit={handleSubmit} className="auth-form">
+          {/* Register fields */}
+          
+ main
           {!isLogin && (
             <div className="form-row">
               <div className="form-group">
@@ -132,10 +251,12 @@ const AuthForm = ({ onLogin }) => {
               placeholder="Enter your email"
             />
           </div>
+          
 
           {/* Password field with toggle which is used in both signin (login) & signup */}
           <div className="form-group" style={{ position: "relative" }}>
             <label htmlFor="password">Password</label>
+ main
             <input
               type={showPassword ? "text" : "password"}
               id="password"
@@ -160,13 +281,34 @@ const AuthForm = ({ onLogin }) => {
             >
               {showPassword ? "🙈" : "👁️"}
             </button>
+
+            <div className="password-input-container">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                placeholder="Enter your password"
+                minLength={8}
+              />
+              <span
+                className="password-toggle-icon"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+              </span>
+            </div>
+ main
             {!isLogin && (
               <small className="form-hint">
-                Password must be at least 6 characters
+                Password must be at least 8 characters, include uppercase, lowercase, number, and special character.
               </small>
             )}
           </div>
 
+ main
           {/* Confirm Password field with toggle (only in signup) */}
           {!isLogin && (
             <div className="form-group" style={{ position: "relative" }}>
@@ -195,6 +337,29 @@ const AuthForm = ({ onLogin }) => {
               >
                 {showConfirm ? "🙈" : "👁️"}
               </button>
+
+          {!isLogin && (
+            <div className="form-group">
+              <label htmlFor="confirmPassword">Confirm Password</label>
+              <div className="password-input-container">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  placeholder="Confirm your password"
+                  minLength={8}
+                />
+                <span
+                  className="password-toggle-icon"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
+                </span>
+              </div>
+ main
             </div>
           )}
 
@@ -222,6 +387,9 @@ const AuthForm = ({ onLogin }) => {
             </div>
           )}
         </form>
+        <div style={{ marginTop: "20px", display: "flex", justifyContent: "center" }}>
+          <GoogleButton onClick={handleGoogleSignIn} />
+        </div>
 
         <div className="auth-toggle">
           <p>

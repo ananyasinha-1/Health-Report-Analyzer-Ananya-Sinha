@@ -18,10 +18,10 @@ const generateToken = (userId) => {
 // Register new user
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, firstName, lastName } = req.body;
+    const { email, password, confirm_password, firstName, lastName } = req.body;
 
     // Validation
-    if (!email || !password || !firstName || !lastName) {
+    if (!email || !password || !confirm_password || !firstName || !lastName) {
       return res.status(400).json({
         error: 'All fields are required'
       });
@@ -83,7 +83,6 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-
     // Validation
     if (!email || !password) {
       return res.status(400).json({

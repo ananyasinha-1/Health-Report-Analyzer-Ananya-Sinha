@@ -1,0 +1,57 @@
+.faq-container { 
+  width: 100%;
+  margin: 1rem auto;
+  padding: 30px;
+  text-align: center;
+}
+
+.faq-container h2 {
+  color: white;
+  font-size:xx-large;
+  margin-bottom: 18px;
+  font-weight: bold;
+  padding-bottom: 1rem;
+}
+
+.faq-item {
+  background: #fff;
+  padding: 15px 20px;
+  margin: 12px auto;
+  border-radius: 12px;
+  box-shadow: 0px 4px 8px rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+  text-align: left;
+
+  /* 🔥 medium card size */
+  width: 80%;         /* reduce width */
+  min-height: 100px;  /* reduce height */
+  max-width: 600px;   /* keeps it medium */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.faq-item:hover {
+  transform: scale(1.02);
+  box-shadow: 0px 6px 12px rgba(0,0,0,0.15);
+}
+
+.faq-item h4 {
+  margin: 0;
+  color:black;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.faq-item p {
+  margin-top: 10px;
+  font-size: 16px;
+  color:black;
+  line-height: 1.5;
+}
+
+.faq-item.open {
+  border-left: 5px solid #e63946;
+  background: #fff9f9;
+}
